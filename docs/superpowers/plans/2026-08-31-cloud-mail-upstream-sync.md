@@ -74,7 +74,7 @@ Do not change the existing environment variables, build commands, Wrangler comma
 
 - [ ] **Step 3: Check the reusable interface statically**
 
-Confirm that the workflow contains exactly one top-level `on` mapping with `push`, `workflow_dispatch`, and `workflow_call`; `workflow_call.inputs.ref.type` is `string); and the checkout expression is `${{ inputs.ref || github.ref }}`. Confirm that no Cloudflare value or secret was added to the file.
+Confirm that the workflow contains exactly one top-level `on` mapping with `push`, `workflow_dispatch`, and `workflow_call`; `workflow_call.inputs.ref.type` is `string`; and the checkout expression is `${{ inputs.ref || github.ref }}`. Confirm that no Cloudflare value or secret was added to the file.
 
 Expected result: the deployment workflow remains valid for push/manual runs and can be called by another workflow with a commit SHA.
 
@@ -255,7 +255,7 @@ Expected result: future upstream changes at 02:00 UTC are automatically synchron
 ### Self-review checklist
 
 - [ ] Every requirement in `docs/superpowers/specs/2026-08-31-cloud-mail-upstream-sync-design.md` is covered by Tasks 1–4.
-- [ ] No placeholder such as `TBD`, `TODO`, or “implement later” exists in this plan.
+- [ ] No unresolved placeholder or incomplete instruction exists in this plan.
 - [ ] The `changed` and `commit_sha` output names match between the sync job and deploy job.
 - [ ] The deployment ref passed by the caller is the same SHA that the sync job pushed.
 - [ ] The plan does not require a Cloudflare credential or a force push.
