@@ -7,6 +7,17 @@ on:
       - "mail-worker/**"
       - "mail-vue/**"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "要部署的分支、标签或提交 SHA；留空则使用当前事件 ref"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: "要部署的分支、标签或提交 SHA；留空则使用调用方 ref"
+        required: false
+        type: string
 
 jobs:
   Deploy-cloud-mail:
@@ -37,6 +48,8 @@ jobs:
     steps:
       - name: 🚚 检出代码仓库 / Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: ⚙ 设置 pnpm / Set up pnpm
         uses: pnpm/action-setup@v4.1.0

@@ -1,0 +1,85 @@
+name: 🔄 Sync upstream and deploy
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: 🔄 Sync from upstream
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.sync.outputs.changed }}
+      commit_sha: ${{ steps.sync.outputs.commit_sha }}
+    steps:
+      - name: 🚚 检出 fork / Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 🔄 同步上游代码 / Sync upstream tree
+        id: sync
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          preserve_dir="$(mktemp -d)"
+          trap 'rm -rf -- "$preserve_dir"' EXIT
+
+          mkdir -p "$preserve_dir/.github/workflows"
+          cp .github/workflows/deploy-cloudflare.yml "$preserve_dir/.github/workflows/deploy-cloudflare.yml"
+          cp .github/workflows/sync-upstream.yml "$preserve_dir/.github/workflows/sync-upstream.yml"
+
+          git remote add upstream https://github.com/maillab/cloud-mail.git
+          git fetch --no-tags upstream main
+          upstream_sha="$(git rev-parse upstream/main)"
+
+          git read-tree -mu upstream/main
+          mkdir -p .github/workflows
+          cp "$preserve_dir/.github/workflows/deploy-cloudflare.yml" ".github/workflows/deploy-cloudflare.yml"
+          cp "$preserve_dir/.github/workflows/sync-upstream.yml" ".github/workflows/sync-upstream.yml"
+          git add --all
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+            echo "✅ Already synchronized with upstream."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: sync from maillab/cloud-mail"
+          git push origin HEAD:main
+
+          commit_sha="$(git rev-parse HEAD)"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
+          echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          echo "✅ Synced upstream at $upstream_sha."
+
+      - name: ✅ 输出同步结果 / Report sync result
+        if: always()
+        run: |
+          echo "changed=${{ steps.sync.outputs.changed }}"
+          echo "commit_sha=${{ steps.sync.outputs.commit_sha }}"
+          echo "upstream_sha=${{ steps.sync.outputs.upstream_sha }}"
+
+  deploy:
+    name: 🚀 Deploy synchronized commit
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    uses: ./.github/workflows/deploy-cloudflare.yml
+    with:
+      ref: ${{ needs.sync.outputs.commit_sha }}
+    secrets: inherit
