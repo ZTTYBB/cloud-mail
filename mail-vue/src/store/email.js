@@ -17,11 +17,23 @@ export const useEmailStore = defineStore('email', {
         },
         sendScroll: null,
         detailMap: {},
+        searchParams: {
+            text: '',
+            type: 'subject',
+            startDate: '',
+            endDate: '',
+        },
     }),
     persist: {
         pick: ['contentData'],
     },
     actions: {
+        setSearchParams(params) {
+            this.searchParams = {
+                ...this.searchParams,
+                ...params,
+            }
+        },
         fetchList(request) {
             return request(0).then(data => {
                 request(1).then(fullData => {

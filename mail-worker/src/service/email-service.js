@@ -28,7 +28,19 @@ const emailService = {
 
 	async list(c, params, userId) {
 
-		let { emailId, type, accountId, size, timeSort, allReceive, full } = params;
+		let {
+			emailId,
+			type,
+			accountId,
+			size,
+			timeSort,
+			allReceive,
+			full,
+			text,
+			searchType,
+			startDate,
+			endDate,
+		} = params;
 
 		size = Number(size);
 		type = Number(type);
@@ -65,8 +77,29 @@ const emailService = {
 			allReceive = accountRow.allReceive;
 		}
 
-		const filters = this.emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort });
-		const countFilters = this.emailListFilters({ userId, accountId, type, allReceive, withCursor: false });
+		const filters = this.emailListFilters({
+			userId,
+			accountId,
+			type,
+			allReceive,
+			emailId,
+			timeSort,
+			text,
+			searchType,
+			startDate,
+			endDate,
+		});
+		const countFilters = this.emailListFilters({
+			userId,
+			accountId,
+			type,
+			allReceive,
+			withCursor: false,
+			text,
+			searchType,
+			startDate,
+			endDate,
+		});
 		const columns = full ? emailListColumns : emailBriefColumns;
 
 		const query = orm(c)
@@ -155,7 +188,19 @@ const emailService = {
 		return list;
 	},
 
-	emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, withCursor = true }) {
+	emailListFilters({
+		userId,
+		accountId,
+		type,
+		allReceive,
+		emailId,
+		timeSort,
+		withCursor = true,
+		text,
+		searchType,
+		startDate,
+		endDate,
+	}) {
 		const conditions = [
 			eq(email.userId, userId),
 			eq(email.type, type),
@@ -168,6 +213,44 @@ const emailService = {
 		if (withCursor && emailId) {
 			conditions.push(timeSort ? gt(email.emailId, emailId) : lt(email.emailId, emailId));
 		}
+
+		if (text?.trim() && searchType) {
+			const searchText = `%${text.trim()}%`;
+
+			if (searchType === 'subject') {
+				conditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${searchText}`);
+			}
+
+			if (searchType === 'content') {
+				conditions.push(
+					or(
+						sql`${email.text} COLLATE NOCASE LIKE ${searchText}`,
+						sql`${email.content} COLLATE NOCASE LIKE ${searchText}`,
+					)
+				);
+			}
+
+			if (searchType === 'sender') {
+				conditions.push(sql`${email.name} COLLATE NOCASE LIKE ${searchText}`);
+			}
+
+			if (searchType === 'senderAddress') {
+				conditions.push(sql`${email.sendEmail} COLLATE NOCASE LIKE ${searchText}`);
+			}
+
+			if (searchType === 'recipientAddress') {
+				conditions.push(sql`${email.toEmail} COLLATE NOCASE LIKE ${searchText}`);
+			}
+		}
+
+		if (startDate) {
+			conditions.push(gte(email.createTime, startDate));
+		}
+
+		if (endDate) {
+			conditions.push(lte(email.createTime, endDate));
+		}
+
 		return conditions;
 	},
 
@@ -741,22 +824,22 @@ const emailService = {
 		const { noRecipient  } = await settingService.query(c);
 
 		//查询所有收件人账号信息
-		let accountList = await orm(c).select().from(account).where(inArray(account.email, receiveEmail)).all();
+		let accountList = await orm(c).select().from(account).where(inArray(sql`${account.email} COLLATE NOCASE`, receiveEmail)).all();
 
 		// 对于含+未精确匹配的收件人，获取基础地址账号
 		const plusEmails = receiveEmail.filter(
-			e => e.includes('+') && !accountList.some(a => a.email === e)
+			e => e.includes('+') && !accountList.some(a => a.email.toLowerCase() === e.toLowerCase())
 		);
 		const baseAccounts = [];
 		if (plusEmails.length > 0) {
 			const baseEmails = [...new Set(
 				plusEmails.map(e => emailUtils.getBaseEmail(e)).filter(Boolean)
 			)];
-			const existing = new Set(accountList.map(a => a.email));
-			const needed = baseEmails.filter(e => !existing.has(e));
+			const existing = new Set(accountList.map(a => a.email.toLowerCase()));
+			const needed = baseEmails.filter(e => !existing.has(e.toLowerCase()));
 			if (needed.length > 0) {
 				const rows = await orm(c).select().from(account)
-					.where(inArray(account.email, needed)).all();
+					.where(inArray(sql`${account.email} COLLATE NOCASE`, needed)).all();
 				baseAccounts.push(...rows);
 			}
 		}
@@ -781,12 +864,12 @@ const emailService = {
 			emailValues.toName = emailUtils.getName(email);
 			emailValues.emailId = null;
 
-			let accountRow = allAccounts.find(accountRow => accountRow.email === email);
+			let accountRow = allAccounts.find(accountRow => accountRow.email.toLowerCase() === email.toLowerCase());
 
 			// 精确匹配不到时回退到主地址（去掉 +tag）
 			if (!accountRow && email.includes('+')) {
 				const baseEmail = emailUtils.getBaseEmail(email);
-				accountRow = allAccounts.find(accountRow => accountRow.email === baseEmail);
+				accountRow = allAccounts.find(accountRow => accountRow.email.toLowerCase() === baseEmail.toLowerCase());
 			}
 
 			//如果收件人存在就把邮件信息改成收件人的
@@ -1155,7 +1238,7 @@ const emailService = {
 			const rows = await orm(c)
 				.select({ userId: user.userId })
 				.from(user)
-				.where(sql`lower(${user.email}) IN (${sql.join(excludeEmails.map(email => sql`${email.toLowerCase()}`), sql`, `)})`)
+				.where(sql`${user.email} COLLATE NOCASE IN (${sql.join(excludeEmails.map(email => sql`${email}`), sql`, `)})`)
 				.all();
 			excludeUserIds = rows.map(row => row.userId);
 		}

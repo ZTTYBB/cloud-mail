@@ -175,7 +175,7 @@
           <el-dropdown-item v-if="['email','star'].includes(props.type)" @click="openReply(rightClickEmail)">
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="la:reply" width="20" height="20"  />
+                <Icon icon="fluent-mdl2:reply" width="19" height="19"  />
                 <span>{{t('reply')}}</span>
               </div>
             </template>
@@ -1310,6 +1310,10 @@ function loadData() {
   .icon {
     font-size: 18px;
     cursor: pointer;
+  }
+
+  .reload {
+    margin-left: 2px;
   }
 
   .more-icon {
