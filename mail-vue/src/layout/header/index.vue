@@ -4,10 +4,17 @@
       <hanburger @click="changeAside"></hanburger>
       <span class="breadcrumb-item">{{ $t(route.meta.title) }}</span>
     </div>
-    <div v-perm="'email:send'" class="writer-box" @click="openSend">
-      <div class="writer">
-        <Icon icon="material-symbols:edit-outline-sharp" width="22" height="22"/>
-      </div>
+    <div v-perm="'email:send'" class="writer-box">
+      <el-button
+        class="writer"
+        size="default"
+        :aria-label="$t('compose')"
+        @click="openSend"
+      >
+        <el-icon :size="21">
+          <Icon icon="material-symbols:edit-outline-sharp"/>
+        </el-icon>
+      </el-button>
     </div>
     <email-search
       v-if="showInboxSearch"
@@ -427,16 +434,19 @@ onBeforeUnmount(() => {
     flex-shrink: 0;
 
     .writer {
-      box-sizing: border-box;
       width: 32px;
       height: 32px;
-      border-radius: 6px;
-      border: 1px solid var(--el-color-primary);
-      color: var(--el-color-white);
-      background: var(--el-color-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      --el-button-bg-color: transparent;
+      --el-button-border-color: transparent;
+      --el-button-hover-bg-color: transparent;
+      --el-button-hover-border-color: transparent;
+      --el-button-active-bg-color: transparent;
+      --el-button-active-border-color: transparent;
+      --el-button-outline-color: transparent;
     }
   }
 }

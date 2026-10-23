@@ -1,7 +1,7 @@
 <template>
   <div ref="searchRef" class="email-search">
     <div class="search-placeholder" @click="openSearch">
-      <Icon icon="iconoir:search" width="20" height="20"/>
+      <Icon icon="akar-icons:search" width="20" height="20"/>
       <span class="search-placeholder-text" :class="{ 'has-search-text': savedSearchSummary }" :title="savedSearchSummary">
         {{ savedSearchSummary || t('searchMail') }}
       </span>
@@ -14,7 +14,7 @@
       @click="openSearch"
     >
       <el-icon :size="20">
-        <Icon icon="iconoir:search"/>
+        <Icon icon="akar-icons:search"/>
       </el-icon>
     </el-button>
     <Transition name="search-panel-fade" @after-enter="focusInputOnDesktop">
@@ -353,7 +353,16 @@ onBeforeUnmount(() => {
     width: 32px;
     height: 32px;
     padding: 0;
-    border-radius: 6px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    --el-button-bg-color: transparent;
+    --el-button-border-color: transparent;
+    --el-button-hover-bg-color: transparent;
+    --el-button-hover-border-color: transparent;
+    --el-button-active-bg-color: transparent;
+    --el-button-active-border-color: transparent;
+    --el-button-outline-color: transparent;
   }
 
   .email-search .search-panel-shell {

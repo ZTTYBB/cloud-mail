@@ -8,6 +8,7 @@
                show-status
                actionLeft="4px"
                :star-cancel="starCancel"
+               :highlight-text="sendStore.searchParams.text"
                @jump="jumpContent"
                :type="'send'"
   >

@@ -15,6 +15,7 @@
                  @jump="jumpContent"
                  @refresh-before="refreshBefore"
                  @right-search="rightSearch"
+                 :highlight-text="appliedSearchText"
                  :type="'all-email'"
 
     >
@@ -164,6 +165,8 @@ function closedClear() {
   clearParams.endTime = ''
   clearTime.value = null
 }
+
+const appliedSearchText = computed(() => params.name || params.subject || params.userEmail || params.accountEmail || '')
 
 const selectTitle = computed(() => {
   if (params.searchType === 'user') return t('user')

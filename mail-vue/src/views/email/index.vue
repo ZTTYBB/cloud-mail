@@ -8,6 +8,7 @@
                :star-cancel="starCancel"
                :email-read="emailRead"
                :show-unread="true"
+               :highlight-text="emailStore.searchParams.text"
                actionLeft="4px"
                @jump="jumpContent"
   >
