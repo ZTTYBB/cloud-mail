@@ -329,7 +329,7 @@ const zh = {
     width: '宽度',
     titleDesc: '标题',
     noticeContentDesc: '公告内容，支持HTML',
-    verifyModuleFailed: '人机验证模块加载失败，请刷新页面',
+    verifyModuleFailed: '人机验证加载失败，请点击{action}重试',
     popUp: '弹出',
     noRecipientTitle: '无人收件',
     noRecipientDesc: '即使没有注册的邮箱也能收到邮件',
