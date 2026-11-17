@@ -62,22 +62,18 @@ const settingService = {
 		setting.projectLink = projectLink;
 
 		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
+		setting.autoRefresh = Number(setting.autoRefresh) === 1 ? 1 : 2; // 1 关闭，2 开启
 
 		c.set?.('setting', setting);
 		return setting;
 	},
 
-	async get(c, showSiteKey = false) {
+	async get(c) {
 
 		const [settingRow, recordList] = await Promise.all([
 			await this.query(c),
 			verifyRecordService.selectListByIP(c)
 		]);
-
-
-		if (!showSiteKey) {
-			settingRow.siteKey = settingRow.siteKey ? `${settingRow.siteKey.slice(0, 6)}******` : null;
-		}
 
 		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 6)}******` : null;
 
@@ -131,6 +127,10 @@ const settingService = {
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
+
+		if (params.autoRefresh !== undefined) {
+			params.autoRefresh = Number(params.autoRefresh) === 1 ? 1 : 2;
+		}
 
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);
@@ -191,7 +191,7 @@ const settingService = {
 
 	async websiteConfig(c) {
 
-		const settingRow = await this.get(c, true);
+		const settingRow = await this.get(c);
 		const token = await userContext.getToken(c);
 
 		return {
