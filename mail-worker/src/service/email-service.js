@@ -27,6 +27,7 @@ import webhookService from './webhook-service';
 import forwardMime from '../utils/forward-mime';
 import verifyUtils from '../utils/verify-utils';
 import { notifyMailWsFromContext } from '../websocket/notify';
+import proxyService from './proxy-service';
 
 const emailService = {
 
@@ -274,7 +275,9 @@ const emailService = {
 	},
 
 	allEmailListFilters({ emailId, name, subject, accountEmail, userEmail, type, timeSort, withCursor = true, text, searchType, startDate, endDate }) {
-		const conditions = [];
+		const conditions = [
+			ne(email.status, emailConst.status.SAVING)
+		];
 
 		if (type === 'send') {
 			conditions.push(eq(email.type, emailConst.type.SEND));
@@ -420,6 +423,8 @@ const emailService = {
 
 		const { resendTokens, r2Domain, send, domainList } = await settingService.query(c);
 
+		// 引用正文里的 /proxy?url= 还原成原始外链再发。
+		content = proxyService.restoreHtml(content);
 		let { imageDataList, html } = await attService.toImageUrlHtml(c, content);
 
 		//判断是否关闭发件功能
@@ -1079,14 +1084,27 @@ const emailService = {
 		return emailRowList;
 	},
 
+	// 规则转发：只按所属用户登录邮箱匹配，名单仍存在 rule_email。
+	matchForwardRule({ ruleEmail, userEmail }) {
+		const users = String(ruleEmail || '').split(',').map(item => item.trim().toLowerCase()).filter(Boolean);
+		return !!(userEmail && users.includes(String(userEmail).toLowerCase()));
+	},
+
 	//站内邮件不经过 email 事件，在这里按转发规则推送
 	async forwardOnSiteEmail(c, emailRowList, { sendParams }) {
 
 		const { tgBotStatus, tgChatId, forwardStatus, forwardEmail, webhookStatus, webhookUrl, webhookRetry, webhookSecret, ruleEmail, ruleType } = await settingService.query(c);
 
 		if (ruleType === settingConst.ruleType.RULE) {
-			const emails = ruleEmail.split(',');
-			emailRowList = emailRowList.filter(emailRow => emails.includes(emailRow.toEmail));
+			const userIds = [...new Set(emailRowList.map(row => row.userId).filter(Boolean))];
+			const userRows = userIds.length
+				? await orm(c).select({ userId: user.userId, email: user.email }).from(user).where(inArray(user.userId, userIds)).all()
+				: [];
+			const userEmailById = Object.fromEntries(userRows.map(row => [row.userId, row.email]));
+			emailRowList = emailRowList.filter(emailRow => this.matchForwardRule({
+				ruleEmail,
+				userEmail: userEmailById[emailRow.userId]
+			}));
 		}
 
 		for (const emailRow of emailRowList) {
@@ -1343,7 +1361,8 @@ const emailService = {
 			.where(
 				and(
 					gt(email.emailId, emailId),
-					eq(email.type, emailConst.type.RECEIVE)
+					eq(email.type, emailConst.type.RECEIVE),
+					ne(email.status, emailConst.status.SAVING)
 				))
 			.orderBy(desc(email.emailId))
 			.limit(50);
@@ -1368,6 +1387,9 @@ const emailService = {
 				emailRow.attList = atts;
 			});
 		}
+
+		// 完整邮件查询：给附件后，把正文外链图改成 /proxy?url=。
+		await proxyService.rewriteList(c, list);
 	},
 
 	async restoreByUserId(c, userId) {

@@ -691,7 +691,7 @@ Authorization: &lt;secret&gt;</pre>
           </div>
         </template>
         <div class="forward-set-body">
-          <el-input-tag :placeholder="$t('ruleEmailsInputDesc')" tag-type="success" v-model="ruleEmail"
+          <el-input-tag :placeholder="$t('ruleUsersInputDesc')" tag-type="warning" v-model="ruleEmail"
                         @add-tag="ruleEmailAddTag"/>
         </div>
         <template #footer>
@@ -921,7 +921,7 @@ defineOptions({
   name: 'sys-setting'
 })
 
-const currentVersion = 'v3.5.1'
+const currentVersion = 'v3.6.0'
 const hasUpdate = ref(false)
 let getUpdateErrorCount = 1;
 const {t, locale} = useI18n();
