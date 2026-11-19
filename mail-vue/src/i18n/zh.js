@@ -213,6 +213,7 @@ const zh = {
     rules: '规则转发',
     turnstileSetting: 'Turnstile 人机验证',
     signUpVerification: '注册验证',
+    loginVerification: '登录验证',
     addEmailVerification: '添加验证',
     about: '关于',
     version: '版本',

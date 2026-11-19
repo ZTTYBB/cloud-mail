@@ -213,6 +213,7 @@ const en = {
     rules: 'Rules',
     turnstileSetting: 'Turnstile',
     signUpVerification: 'Sign up verification',
+    loginVerification: 'Login verification',
     addEmailVerification: 'Add email verification',
     about: 'About',
     version: 'Version',
